@@ -78,6 +78,7 @@ export default function ChatbotPage() {
     bedrooms: property.bedrooms,
     bathrooms: property.bathrooms
   };
+console.log('Payload sent to backend:', payload);
 
   try {
     const res = await axios.post('http://localhost:8000/predict', payload, {

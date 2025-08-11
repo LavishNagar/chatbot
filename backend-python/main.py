@@ -10,6 +10,18 @@ from dotenv import load_dotenv
 from model_defs import ComplexTrapModelRenamed  # Make sure this file exists
 from fastapi.middleware.cors import CORSMiddleware
 
+from schemas import PropertyPayload
+
+class RenameUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == "__main__" and name == "ComplexTrapModelRenamed":
+            module = "model_defs"
+        return super().find_class(module, name)
+
+with open(r"C:\Users\lavis\OneDrive\Documents\Desktop\chatbot\Real estate chatbot\backend-python\complex_price_model_v2.pkl", "rb") as f:
+    model = RenameUnpickler(f).load()
+
+print(model.predict([[450000, 3, 2]]))
 
 
 # Optional OpenAI usage
@@ -95,22 +107,20 @@ def simple_nlp_parse(text: str) -> Dict[str, Any]:
 # ---- Endpoints ----
 
 @app.post("/predict")
-async def predict(payload: dict):
+async def predict(payload: PropertyPayload):
     if model is None:
         raise HTTPException(status_code=500, detail="Model not loaded.")
 
-    data = payload
     try:
         features = [
-            float(data.get("price", 0)),
-            int(data.get("bedrooms", 0)),
-            int(data.get("bathrooms", 0))
+            payload.price,
+            payload.bedrooms,
+            payload.bathrooms
         ]
         pred = model.predict([features])
-        return {"predicted_price": float(pred[0]), "saved": data}
+        return {"predicted_price": float(pred[0]), "saved": payload.dict()}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction error: {e}")
-
 
 @app.post("/nlp")
 async def nlp_parse(req: NLPRequest):
